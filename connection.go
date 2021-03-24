@@ -11,8 +11,17 @@ type defaultConnection struct {
 	client sarama.Client
 }
 
+func newConnection(client sarama.Client) messaging.Connection {
+	return defaultConnection{client: client}
+}
+
 func (this defaultConnection) Reader(ctx context.Context) (messaging.Reader, error) {
-	return nil, nil
+	consumer, err := sarama.NewConsumerFromClient(this.client)
+	if err != nil {
+		return nil, err
+	}
+
+	return newReader(consumer), nil
 }
 
 func (this defaultConnection) Writer(ctx context.Context) (messaging.Writer, error) {
