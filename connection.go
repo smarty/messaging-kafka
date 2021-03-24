@@ -29,7 +29,12 @@ func (this defaultConnection) Writer(ctx context.Context) (messaging.Writer, err
 }
 
 func (this defaultConnection) CommitWriter(ctx context.Context) (messaging.CommitWriter, error) {
-	return nil, nil
+	producer, err := sarama.NewSyncProducerFromClient(this.client)
+	if err != nil {
+		return nil, err
+	}
+
+	return newWriter(producer), nil
 }
 
 func (this defaultConnection) Close() error {
