@@ -3,14 +3,16 @@ package kafka
 import (
 	"context"
 
+	"github.com/segmentio/kafka-go"
 	"github.com/smartystreets/messaging/v3"
 )
 
 type defaultConnection struct {
+	inner *kafka.Conn
 }
 
-func newConnection() messaging.Connection {
-	return defaultConnection{}
+func newConnection(inner *kafka.Conn) messaging.Connection {
+	return defaultConnection{inner: inner}
 }
 
 func (this defaultConnection) Reader(ctx context.Context) (messaging.Reader, error) {
