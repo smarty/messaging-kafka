@@ -3,25 +3,18 @@ package kafka
 import (
 	"context"
 
-	"github.com/Shopify/sarama"
 	"github.com/smartystreets/messaging/v3"
 )
 
 type defaultConnection struct {
-	client sarama.Client
 }
 
-func newConnection(client sarama.Client) messaging.Connection {
-	return defaultConnection{client: client}
+func newConnection() messaging.Connection {
+	return defaultConnection{}
 }
 
 func (this defaultConnection) Reader(ctx context.Context) (messaging.Reader, error) {
-	consumer, err := sarama.NewConsumerFromClient(this.client)
-	if err != nil {
-		return nil, err
-	}
-
-	return newReader(consumer), nil
+	return nil, nil
 }
 
 func (this defaultConnection) Writer(ctx context.Context) (messaging.Writer, error) {
@@ -29,12 +22,7 @@ func (this defaultConnection) Writer(ctx context.Context) (messaging.Writer, err
 }
 
 func (this defaultConnection) CommitWriter(ctx context.Context) (messaging.CommitWriter, error) {
-	producer, err := sarama.NewSyncProducerFromClient(this.client)
-	if err != nil {
-		return nil, err
-	}
-
-	return newWriter(producer), nil
+	return nil, nil
 }
 
 func (this defaultConnection) Close() error {
