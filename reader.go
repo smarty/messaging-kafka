@@ -2,8 +2,8 @@ package kafka
 
 import (
 	"context"
-	"github.com/Shopify/sarama"
 
+	"github.com/Shopify/sarama"
 	"github.com/smartystreets/messaging/v3"
 )
 

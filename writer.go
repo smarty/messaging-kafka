@@ -2,9 +2,10 @@ package kafka
 
 import (
 	"context"
+	"strconv"
+
 	"github.com/Shopify/sarama"
 	"github.com/smartystreets/messaging/v3"
-	"strconv"
 )
 
 type defaultWriter struct {
