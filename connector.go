@@ -16,16 +16,21 @@ type defaultConnector struct {
 	mutex  *sync.Mutex
 }
 
-func newConnector(brokers []string) messaging.Connector {
-	config := &sarama.Config{}
-	return &defaultConnector{config: config, mutex: &sync.Mutex{}}
+func NewConnector(brokers []string) messaging.Connector {
+	config := sarama.NewConfig()
+	config.ClientID = "sample-client"
+	config.Version = sarama.MaxVersion
+	config.Producer.Compression = sarama.CompressionZSTD
+	config.Producer.Return.Successes = true
+	config.Producer.Return.Errors = true
+	return &defaultConnector{config: config, brokers: brokers, mutex: &sync.Mutex{}}
 }
 
 func (this *defaultConnector) Connect(ctx context.Context) (messaging.Connection, error) {
 	this.mutex.Lock()
 	defer this.mutex.Unlock()
 
-	client, err := sarama.NewClient(this.brokers, &sarama.Config{})
+	client, err := sarama.NewClient(this.brokers, this.config)
 	if err != nil {
 		return nil, err
 	}
