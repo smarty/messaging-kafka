@@ -74,6 +74,17 @@ func main() {
 		if err != nil {
 			panic(err)
 		}
-		log.Println("Message:", string(delivery.Payload))
+
+		log.Println("DeliveryID", delivery.DeliveryID)
+		log.Println("SourceID", delivery.SourceID)
+		log.Println("MessageID", delivery.MessageID)
+		log.Println("CorrelationID", delivery.CorrelationID)
+		log.Println("Timestamp", delivery.Timestamp)
+		log.Println("Durable", delivery.Durable)
+		log.Println("MessageType", delivery.MessageType)
+		log.Println("ContentType", delivery.ContentType)
+		log.Println("ContentEncoding", delivery.ContentEncoding)
+		log.Println("Payload", string(delivery.Payload))
+		log.Println("------------------------------")
 	}
 }
