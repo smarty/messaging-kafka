@@ -2,39 +2,51 @@ package kafka
 
 import (
 	"context"
-	"io"
 
+	"github.com/segmentio/kafka-go"
 	"github.com/smartystreets/messaging/v3"
 )
 
 type defaultStream struct {
+	config configuration
+	reader *kafka.Reader
 }
 
-func newStream() messaging.Stream {
-	return nil
+func newStream(config configuration, reader *kafka.Reader) messaging.Stream {
+	return defaultStream{config: config, reader: reader}
 }
 
 func (this defaultStream) Read(ctx context.Context, target *messaging.Delivery) error {
-	return nil
-	//select {
-	//case source, open := <-this.stream.Messages():
-	//	return this.processDelivery(source, target, open)
-	//case <-ctx.Done():
-	//	return ctx.Err()
-	//}
-}
-func (this defaultStream) processDelivery(target *messaging.Delivery, deliveryChannelOpen bool) error {
-	if !deliveryChannelOpen {
-		return io.EOF
+	raw, err := this.reader.FetchMessage(ctx)
+	if err != nil {
+		return err
 	}
 
+	target.DeliveryID = uint64(raw.Offset)
+	//SourceID        uint64
+	//MessageID       uint64
+	//CorrelationID   uint64 // FUTURE: CausationID and UserID
+	target.Timestamp = raw.Time
+	target.Durable = true
+	//MessageType     string
+	//ContentType     string
+	//ContentEncoding string
+	target.Payload = raw.Value
+
 	return nil
 }
 
-func (this defaultStream) Acknowledge(context.Context, ...messaging.Delivery) error {
-	return nil
+func (this defaultStream) Acknowledge(ctx context.Context, deliveries ...messaging.Delivery) error {
+	// NOTE: this only makes sense when we're using consumer groups
+
+	last := messaging.Delivery{} // TODO: get last delivery
+	return this.reader.CommitMessages(ctx, kafka.Message{
+		Topic:     "", // TODO
+		Partition: 0,  // TODO
+		Offset:    int64(last.DeliveryID + 1),
+	})
 }
 
 func (this defaultStream) Close() error {
-	return nil
+	return this.reader.Close()
 }

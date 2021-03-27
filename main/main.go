@@ -10,7 +10,7 @@ import (
 )
 
 func main() {
-	connector := kafka.NewConnector([]string{"localhost:9092"})
+	connector := kafka.NewConnector(kafka.Options.Brokers("localhost:9092"))
 	defer func() { _ = connector.Close() }()
 
 	connection, err := connector.Connect(context.Background())

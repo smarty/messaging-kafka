@@ -2,31 +2,47 @@ package kafka
 
 import (
 	"context"
+	"io"
+	"sync"
 
-	"github.com/segmentio/kafka-go"
 	"github.com/smartystreets/messaging/v3"
 )
 
 type defaultConnection struct {
-	inner *kafka.Conn
+	config configuration
+	active []io.Closer
+	mutex  *sync.Mutex
 }
 
-func newConnection(inner *kafka.Conn) messaging.Connection {
-	return defaultConnection{inner: inner}
+func newConnection(config configuration) messaging.Connection {
+	return &defaultConnection{config: config, mutex: &sync.Mutex{}}
 }
 
-func (this defaultConnection) Reader(ctx context.Context) (messaging.Reader, error) {
+func (this *defaultConnection) Reader(_ context.Context) (messaging.Reader, error) {
+	this.mutex.Lock()
+	defer this.mutex.Unlock()
+	reader := newReader(this.config)
+	this.active = append(this.active, reader)
+	return reader, nil
+}
+
+func (this *defaultConnection) Writer(_ context.Context) (messaging.Writer, error) {
 	return nil, nil
 }
 
-func (this defaultConnection) Writer(ctx context.Context) (messaging.Writer, error) {
+func (this *defaultConnection) CommitWriter(_ context.Context) (messaging.CommitWriter, error) {
 	return nil, nil
 }
 
-func (this defaultConnection) CommitWriter(ctx context.Context) (messaging.CommitWriter, error) {
-	return nil, nil
-}
+func (this *defaultConnection) Close() error {
+	this.mutex.Lock()
+	defer this.mutex.Unlock()
 
-func (this defaultConnection) Close() error {
+	for i := range this.active {
+		_ = this.active[i].Close()
+		this.active[i] = nil
+	}
+	this.active = this.active[0:0]
+
 	return nil
 }
