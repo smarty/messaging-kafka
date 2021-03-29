@@ -26,8 +26,7 @@ func (this defaultReader) Stream(_ context.Context, config messaging.StreamConfi
 		return nil, err
 	}
 
-	go this.awaitCancel(reader)
-	return newStream(this.config, reader, len(config.GroupName) > 0), nil
+	return newStream(this.config, reader, len(config.GroupName) > 0, this.lifecycle), nil
 }
 func (this defaultReader) openReader(config messaging.StreamConfig) (reader *kafka.Reader, err error) {
 	kafkaConfig := kafka.ReaderConfig{
