@@ -8,12 +8,13 @@ import (
 )
 
 type defaultStream struct {
-	config configuration
-	reader *kafka.Reader
+	config        configuration
+	reader        *kafka.Reader
+	consumerGroup bool
 }
 
-func newStream(config configuration, reader *kafka.Reader) messaging.Stream {
-	return defaultStream{config: config, reader: reader}
+func newStream(config configuration, reader *kafka.Reader, consumerGroup bool) messaging.Stream {
+	return defaultStream{config: config, reader: reader, consumerGroup: consumerGroup}
 }
 
 func (this defaultStream) Read(ctx context.Context, target *messaging.Delivery) error {
@@ -22,6 +23,7 @@ func (this defaultStream) Read(ctx context.Context, target *messaging.Delivery) 
 		return err
 	}
 
+	target.Upstream = raw
 	target.DeliveryID = uint64(raw.Offset)
 	//SourceID        uint64
 	//MessageID       uint64
@@ -37,14 +39,16 @@ func (this defaultStream) Read(ctx context.Context, target *messaging.Delivery) 
 }
 
 func (this defaultStream) Acknowledge(ctx context.Context, deliveries ...messaging.Delivery) error {
-	// NOTE: this only makes sense when we're using consumer groups
+	if !this.consumerGroup {
+		return nil
+	}
 
-	last := messaging.Delivery{} // TODO: get last delivery
-	return this.reader.CommitMessages(ctx, kafka.Message{
-		Topic:     "", // TODO
-		Partition: 0,  // TODO
-		Offset:    int64(last.DeliveryID + 1),
-	})
+	messages := make([]kafka.Message, 0, len(deliveries))
+	for _, delivery := range deliveries {
+		messages = append(messages, delivery.Upstream.(kafka.Message))
+	}
+
+	return this.reader.CommitMessages(ctx, messages...)
 }
 
 func (this defaultStream) Close() error {

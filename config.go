@@ -35,10 +35,10 @@ func (singleton) defaults(options ...option) []option {
 
 type nop struct{}
 
-func (nop) Printf(...interface{}) {}
+func (nop) Printf(string, ...interface{}) {}
 
 //////
 
 type Logger interface {
-	Printf(...interface{})
+	Printf(string, ...interface{})
 }

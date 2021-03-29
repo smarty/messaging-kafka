@@ -27,22 +27,35 @@ func (this *defaultReader) Stream(_ context.Context, config messaging.StreamConf
 
 	this.mutex.Lock()
 	defer this.mutex.Unlock()
-	stream := newStream(this.config, reader)
+	stream := newStream(this.config, reader, len(config.GroupName) > 0)
 	this.active = append(this.active, stream)
 	return stream, nil
 }
 func (this *defaultReader) openReader(config messaging.StreamConfig) (reader *kafka.Reader, err error) {
 	kafkaConfig := kafka.ReaderConfig{
-		Brokers:     this.config.Brokers,
-		Topic:       config.StreamName,
-		Partition:   int(config.Partition),
-		StartOffset: int64(config.Sequence), // consumer groups
+		Brokers:        this.config.Brokers,
+		Logger:         this.config.Logger,
+		ErrorLogger:    this.config.Logger,
+		IsolationLevel: kafka.ReadCommitted,
+		MaxBytes:       int(config.MaxMessageBytes),
 	}
 
-	defer func() { err = recover().(error) }()
+	if len(config.GroupName) == 0 {
+		kafkaConfig.Topic = config.StreamName
+		kafkaConfig.Partition = int(config.Partition)
+	} else {
+		kafkaConfig.GroupID = config.GroupName
+		kafkaConfig.GroupTopics = config.Topics
+	}
+
 	reader = kafka.NewReader(kafkaConfig)
-	if config.Sequence > 0 {
+	if config.Sequence > 0 && len(config.GroupName) > 0 {
 		err = reader.SetOffset(int64(config.Sequence))
+	}
+
+	if err != nil {
+		_ = reader.Close()
+		reader = nil
 	}
 
 	return reader, err
