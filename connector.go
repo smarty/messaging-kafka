@@ -2,42 +2,29 @@ package kafka
 
 import (
 	"context"
-	"io"
-	"sync"
 
 	"github.com/smartystreets/messaging/v3"
 )
 
 type defaultConnector struct {
-	config configuration
-	active []io.Closer
-	mutex  *sync.Mutex
+	config    configuration
+	lifecycle context.Context
+	cancel    func()
 }
 
 func NewConnector(options ...option) messaging.Connector {
 	config := configuration{}
 	Options.apply(options...)(&config)
-	return &defaultConnector{config: config, mutex: &sync.Mutex{}}
+	this := defaultConnector{config: config}
+	this.lifecycle, this.cancel = context.WithCancel(config.Context)
+	return this
 }
 
-func (this *defaultConnector) Connect(_ context.Context) (messaging.Connection, error) {
-	this.mutex.Lock()
-	defer this.mutex.Unlock()
-
-	connection := newConnection(this.config)
-	this.active = append(this.active, connection)
-	return connection, nil
+func (this defaultConnector) Connect(_ context.Context) (messaging.Connection, error) {
+	return newConnection(this.config, this.lifecycle), nil
 }
 
-func (this *defaultConnector) Close() error {
-	this.mutex.Lock()
-	defer this.mutex.Unlock()
-
-	for i := range this.active {
-		_ = this.active[i].Close()
-		this.active[i] = nil
-	}
-	this.active = this.active[0:0]
-
+func (this defaultConnector) Close() error {
+	this.cancel()
 	return nil
 }

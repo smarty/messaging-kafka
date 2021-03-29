@@ -3,35 +3,33 @@ package kafka
 import (
 	"context"
 	"io"
-	"sync"
 
 	"github.com/segmentio/kafka-go"
 	"github.com/smartystreets/messaging/v3"
 )
 
 type defaultReader struct {
-	config configuration
-	active []io.Closer
-	mutex  *sync.Mutex
+	config    configuration
+	lifecycle context.Context
+	cancel    func()
 }
 
-func newReader(config configuration) messaging.Reader {
-	return &defaultReader{config: config}
+func newReader(config configuration, parent context.Context) messaging.Reader {
+	this := defaultReader{config: config}
+	this.lifecycle, this.cancel = context.WithCancel(parent)
+	return this
 }
 
-func (this *defaultReader) Stream(_ context.Context, config messaging.StreamConfig) (messaging.Stream, error) {
+func (this defaultReader) Stream(_ context.Context, config messaging.StreamConfig) (messaging.Stream, error) {
 	reader, err := this.openReader(config)
 	if err != nil {
 		return nil, err
 	}
 
-	this.mutex.Lock()
-	defer this.mutex.Unlock()
-	stream := newStream(this.config, reader, len(config.GroupName) > 0)
-	this.active = append(this.active, stream)
-	return stream, nil
+	go this.awaitCancel(reader)
+	return newStream(this.config, reader, len(config.GroupName) > 0), nil
 }
-func (this *defaultReader) openReader(config messaging.StreamConfig) (reader *kafka.Reader, err error) {
+func (this defaultReader) openReader(config messaging.StreamConfig) (reader *kafka.Reader, err error) {
 	kafkaConfig := kafka.ReaderConfig{
 		Brokers:        this.config.Brokers,
 		Logger:         this.config.Logger,
@@ -60,16 +58,12 @@ func (this *defaultReader) openReader(config messaging.StreamConfig) (reader *ka
 
 	return reader, err
 }
+func (this defaultReader) awaitCancel(resource io.Closer) {
+	<-this.lifecycle.Done()
+	_ = resource.Close()
+}
 
-func (this *defaultReader) Close() error {
-	this.mutex.Lock()
-	defer this.mutex.Unlock()
-
-	for i := range this.active {
-		_ = this.active[i].Close()
-		this.active[i] = nil
-	}
-	this.active = this.active[0:0]
-
+func (this defaultReader) Close() error {
+	this.cancel()
 	return nil
 }
