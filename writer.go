@@ -2,9 +2,9 @@ package kafka
 
 import (
 	"context"
+	"encoding/binary"
 
 	"github.com/segmentio/kafka-go"
-	"github.com/segmentio/kafka-go/compress"
 	"github.com/smartystreets/messaging/v3"
 )
 
@@ -21,17 +21,17 @@ func newWriter(config configuration, parent context.Context) messaging.CommitWri
 		config: config,
 		writer: &kafka.Writer{
 			Addr:         kafka.TCP(config.Brokers...),
-			Balancer:     nil,              // TODO: config value
-			MaxAttempts:  1,                // TODO: config value
-			BatchSize:    4096,             // TODO: config value
-			BatchBytes:   1024 * 1024 * 16, // TODO: config value
-			BatchTimeout: 0,                // TODO: config value
-			ReadTimeout:  0,                // TODO: config value
-			WriteTimeout: 0,                // TODO: config value
-			RequiredAcks: kafka.RequireOne, // TODO: config value// durability
+			Compression:  computeCompressionMethod(config.CompressionMethod),
+			Balancer:     computePartitionSelection(config.PartitionSelection),
+			RequiredAcks: computeRequiredWrites(config.RequiredWrites),
+			MaxAttempts:  int(config.MaxWriteAttempts),
+			BatchSize:    int(config.MaxWriteBatchSize),
+			BatchBytes:   0, // TODO: config value
+			BatchTimeout: 0, // TODO: config value
+			ReadTimeout:  0, // TODO: config value
+			WriteTimeout: 0, // TODO: config value
 			Async:        false,
 			Completion:   nil,
-			Compression:  compress.Lz4, // TODO: config value
 			Logger:       config.Logger,
 			ErrorLogger:  config.Logger,
 			Transport:    nil,
@@ -56,12 +56,26 @@ func (this *defaultWriter) Write(_ context.Context, dispatches ...messaging.Disp
 }
 func (this *defaultWriter) write(dispatch messaging.Dispatch) {
 	this.pending = append(this.pending, kafka.Message{
-		Topic:   dispatch.Topic,
-		Key:     nil, // TODO
-		Value:   dispatch.Payload,
-		Headers: nil,
-		Time:    dispatch.Timestamp,
+		Time:  dispatch.Timestamp,
+		Topic: dispatch.Topic,
+		Key:   computeMessageKey(dispatch.Partition),
+		Value: dispatch.Payload,
+		Headers: []kafka.Header{
+			// TODO: merge these fields into a numeric value
+			{Key: "message-type", Value: []byte(dispatch.MessageType)},
+			{Key: "content-type", Value: []byte(dispatch.ContentType)},
+			{Key: "content-encoding", Value: []byte(dispatch.ContentEncoding)},
+		},
 	})
+}
+func computeMessageKey(partition uint64) []byte {
+	if partition == 0 {
+		return nil
+	}
+
+	target := make([]byte, 8)
+	binary.LittleEndian.PutUint64(target, partition)
+	return target
 }
 
 func (this *defaultWriter) Commit() error {

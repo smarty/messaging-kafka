@@ -1,11 +1,21 @@
 package kafka
 
-import "context"
+import (
+	"context"
+	"math"
+
+	"github.com/segmentio/kafka-go"
+)
 
 type configuration struct {
-	Brokers []string
-	Context context.Context
-	Logger  Logger
+	Brokers            []string
+	CompressionMethod  compressionMethod
+	PartitionSelection partitionSelection
+	RequiredWrites     requiredWrites
+	MaxWriteAttempts   uint8
+	MaxWriteBatchSize  uint16
+	Context            context.Context
+	Logger             Logger
 }
 
 var Options singleton
@@ -16,11 +26,25 @@ type option func(*configuration)
 func (singleton) Brokers(value ...string) option {
 	return func(this *configuration) { this.Brokers = value }
 }
+func (singleton) CompressionMethod(value compressionMethod) option {
+	return func(this *configuration) { this.CompressionMethod = value }
+}
+func (singleton) PartitionSelection(value partitionSelection) option {
+	return func(this *configuration) { this.PartitionSelection = value }
+}
+func (singleton) RequiredWrites(value requiredWrites) option {
+	return func(this *configuration) { this.RequiredWrites = value }
+}
+func (singleton) MaxWriteAttempts(value uint8) option {
+	return func(this *configuration) { this.MaxWriteAttempts = value }
+}
+func (singleton) MaxWriteBatchSize(value uint16) option {
+	return func(this *configuration) { this.MaxWriteBatchSize = value }
+}
 
 func (singleton) Context(value context.Context) option {
 	return func(this *configuration) { this.Context = value }
 }
-
 func (singleton) Logger(value Logger) option {
 	return func(this *configuration) { this.Logger = value }
 }
@@ -37,17 +61,105 @@ func (singleton) defaults(options ...option) []option {
 
 	return append([]option{
 		Options.Brokers("127.0.0.1:9092"),
+		Options.CompressionMethod(CompressionMethodLz4),
+		Options.PartitionSelection(PartitionSelectionRoundRobin),
+		Options.RequiredWrites(RequiredWritesOne),
+		Options.MaxWriteAttempts(1),
+		Options.MaxWriteBatchSize(math.MaxUint16),
 		Options.Context(context.Background()),
 		Options.Logger(defaultLogger),
 	}, options...)
 }
 
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
 type nop struct{}
 
 func (nop) Printf(string, ...interface{}) {}
 
-//////
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 type Logger interface {
 	Printf(string, ...interface{})
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+type compressionMethod uint8
+
+var (
+	CompressionMethodNone      compressionMethod = 0
+	CompressionMethodGZip      compressionMethod = 1
+	CompressionMethodLz4       compressionMethod = 2
+	CompressionMethodSnappy    compressionMethod = 3
+	CompressionMethodZStandard compressionMethod = 4
+)
+
+func computeCompressionMethod(method compressionMethod) kafka.Compression {
+	switch method {
+	case CompressionMethodGZip:
+		return kafka.Gzip
+	case CompressionMethodLz4:
+		return kafka.Lz4
+	case CompressionMethodSnappy:
+		return kafka.Snappy
+	case CompressionMethodZStandard:
+		return kafka.Zstd
+	case CompressionMethodNone:
+		return 0
+	default:
+		panic("unknown compression method value")
+	}
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+type partitionSelection uint8
+
+var (
+	PartitionSelectionRoundRobin partitionSelection = 0
+	PartitionSelectionMurmurHash partitionSelection = 1
+	PartitionSelectionFNVHash    partitionSelection = 2
+	PartitionSelectionCrc32Hash  partitionSelection = 3
+	PartitionSelectionLeastBytes partitionSelection = 4
+)
+
+func computePartitionSelection(method partitionSelection) kafka.Balancer {
+	switch method {
+	case PartitionSelectionRoundRobin:
+		return &kafka.RoundRobin{}
+	case PartitionSelectionMurmurHash:
+		return kafka.Murmur2Balancer{}
+	case PartitionSelectionFNVHash:
+		return &kafka.Hash{}
+	case PartitionSelectionCrc32Hash:
+		return kafka.CRC32Balancer{}
+	case PartitionSelectionLeastBytes:
+		return &kafka.LeastBytes{}
+	default:
+		panic("unknown partition selection method value")
+	}
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+type requiredWrites uint8
+
+var (
+	RequiredWritesNone requiredWrites = 0
+	RequiredWritesOne  requiredWrites = 1
+	RequiredWritesAll  requiredWrites = 2
+)
+
+func computeRequiredWrites(required requiredWrites) kafka.RequiredAcks {
+	switch required {
+	case RequiredWritesOne:
+		return kafka.RequireOne
+	case RequiredWritesAll:
+		return kafka.RequireAll
+	case RequiredWritesNone:
+		return kafka.RequireNone
+	default:
+		panic("unknown required acknowledgement value")
+	}
 }
