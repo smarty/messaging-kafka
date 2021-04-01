@@ -36,7 +36,7 @@ func (singleton) defaults(options ...option) []option {
 	var defaultLogger = nop{}
 
 	return append([]option{
-		Options.Brokers("127.0.0.1:2181"),
+		Options.Brokers("127.0.0.1:9092"),
 		Options.Context(context.Background()),
 		Options.Logger(defaultLogger),
 	}, options...)
