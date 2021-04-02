@@ -31,8 +31,8 @@ func (this defaultReader) Stream(_ context.Context, config messaging.StreamConfi
 func (this defaultReader) openReader(config messaging.StreamConfig) (reader *kafka.Reader, err error) {
 	kafkaConfig := kafka.ReaderConfig{
 		Brokers:        this.config.Brokers,
-		Logger:         this.config.Logger,
-		ErrorLogger:    this.config.Logger,
+		Logger:         this.config.DriverLogger,
+		ErrorLogger:    this.config.DriverLogger,
 		IsolationLevel: kafka.ReadCommitted,
 		MaxBytes:       int(config.MaxMessageBytes),
 	}

@@ -17,7 +17,9 @@ type configuration struct {
 	MaxWriteBatchSize  uint16
 	BatchWriteInterval time.Duration
 	Context            context.Context
+	Monitor            Monitor
 	Logger             Logger
+	DriverLogger       Logger
 }
 
 var Options singleton
@@ -53,6 +55,12 @@ func (singleton) Context(value context.Context) option {
 func (singleton) Logger(value Logger) option {
 	return func(this *configuration) { this.Logger = value }
 }
+func (singleton) Monitor(value Monitor) option {
+	return func(this *configuration) { this.Monitor = value }
+}
+func (singleton) DriverLogger(value Logger) option {
+	return func(this *configuration) { this.DriverLogger = value }
+}
 
 func (singleton) apply(options ...option) option {
 	return func(this *configuration) {
@@ -62,8 +70,6 @@ func (singleton) apply(options ...option) option {
 	}
 }
 func (singleton) defaults(options ...option) []option {
-	var defaultLogger = nop{}
-
 	return append([]option{
 		Options.Brokers("127.0.0.1:9092"),
 		Options.CompressionMethod(CompressionMethodLz4),
@@ -73,7 +79,8 @@ func (singleton) defaults(options ...option) []option {
 		Options.MaxWriteBatchSize(math.MaxUint16),
 		Options.BatchWriteInterval(time.Millisecond),
 		Options.Context(context.Background()),
-		Options.Logger(defaultLogger),
+		Options.Logger(nop{}),
+		Options.Monitor(nop{}),
 	}, options...)
 }
 
@@ -83,10 +90,30 @@ type nop struct{}
 
 func (nop) Printf(string, ...interface{}) {}
 
+func (nop) ConnectionOpened(error)             {}
+func (nop) ConnectionClosed()                  {}
+func (nop) DispatchPublished()                 {}
+func (nop) DeliveryReceived()                  {}
+func (nop) DeliveryAcknowledged(uint64, error) {}
+func (nop) TransactionCommitted(error)         {}
+func (nop) TransactionRolledBack(error)        {}
+
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 type Logger interface {
 	Printf(string, ...interface{})
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+type Monitor interface {
+	ConnectionOpened(error)
+	ConnectionClosed()
+	DispatchPublished()
+	DeliveryReceived()
+	DeliveryAcknowledged(uint64, error)
+	TransactionCommitted(error)
+	TransactionRolledBack(error)
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

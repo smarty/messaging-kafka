@@ -29,8 +29,8 @@ func newWriter(config configuration, parent context.Context) messaging.CommitWri
 			BatchSize:    int(config.MaxWriteBatchSize),
 			BatchTimeout: config.BatchWriteInterval,
 			Async:        false,
-			Logger:       config.Logger,
-			ErrorLogger:  config.Logger,
+			Logger:       config.DriverLogger,
+			ErrorLogger:  config.DriverLogger,
 		},
 	}
 
