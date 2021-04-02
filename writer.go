@@ -27,15 +27,9 @@ func newWriter(config configuration, parent context.Context) messaging.CommitWri
 			RequiredAcks: computeRequiredWrites(config.RequiredWrites),
 			MaxAttempts:  int(config.MaxWriteAttempts),
 			BatchSize:    int(config.MaxWriteBatchSize),
-			BatchBytes:   0, // TODO: config value
-			BatchTimeout: 0, // TODO: config value
-			ReadTimeout:  0, // TODO: config value
-			WriteTimeout: 0, // TODO: config value
 			Async:        false,
-			Completion:   nil,
 			Logger:       config.Logger,
 			ErrorLogger:  config.Logger,
-			Transport:    nil,
 		},
 	}
 
@@ -62,10 +56,9 @@ func (this *defaultWriter) write(dispatch messaging.Dispatch) {
 		Key:   computeMessageKey(dispatch.Partition),
 		Value: dispatch.Payload,
 		Headers: []kafka.Header{
-			{Key: "source-id", Value: []byte(strconv.FormatUint(dispatch.SourceID, 10))},   // TODO: don't do this
-			{Key: "message-id", Value: []byte(strconv.FormatUint(dispatch.MessageID, 10))}, // TODO: don't do this
-
-			// TODO: merge these fields into a numeric value
+			{Key: "source-id", Value: []byte(strconv.FormatUint(dispatch.SourceID, 10))},
+			{Key: "message-id", Value: []byte(strconv.FormatUint(dispatch.MessageID, 10))},
+			{Key: "correlation-id", Value: []byte(strconv.FormatUint(dispatch.CorrelationID, 10))},
 			{Key: "message-type", Value: []byte(dispatch.MessageType)},
 			{Key: "content-type", Value: []byte(dispatch.ContentType)},
 			{Key: "content-encoding", Value: []byte(dispatch.ContentEncoding)},

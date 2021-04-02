@@ -34,28 +34,24 @@ func (this defaultStream) Read(ctx context.Context, target *messaging.Delivery) 
 
 	target.Upstream = raw
 	target.DeliveryID = uint64(raw.Offset)
-	//SourceID        uint64
-	//MessageID       uint64
-	//CorrelationID   uint64 // FUTURE: CausationID and UserID
 	target.Timestamp = raw.Time
 	target.Durable = true
-	//MessageType     string
-	//ContentType     string
-	//ContentEncoding string
 	target.Payload = raw.Value
 
 	for _, header := range raw.Headers {
 		switch header.Key {
 		case "source-id":
-			target.SourceID, _ = strconv.ParseUint(string(header.Value), 10, 64) // TODO: don't do this
+			target.SourceID, _ = strconv.ParseUint(string(header.Value), 10, 64)
 		case "message-id":
-			target.MessageID, _ = strconv.ParseUint(string(header.Value), 10, 64) // TODO: don't do this
+			target.MessageID, _ = strconv.ParseUint(string(header.Value), 10, 64)
+		case "correlation-id":
+			target.CorrelationID, _ = strconv.ParseUint(string(header.Value), 10, 64)
 		case "message-type":
-			target.MessageType = string(header.Value) // TODO: don't do this
+			target.MessageType = string(header.Value)
 		case "content-type":
-			target.ContentType = string(header.Value) // TODO: don't do this
+			target.ContentType = string(header.Value)
 		case "content-encoding":
-			target.ContentEncoding = string(header.Value) // TODO: don't do this
+			target.ContentEncoding = string(header.Value)
 		}
 	}
 
