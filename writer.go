@@ -27,6 +27,7 @@ func newWriter(config configuration, parent context.Context) messaging.CommitWri
 			RequiredAcks: computeRequiredWrites(config.RequiredWrites),
 			MaxAttempts:  int(config.MaxWriteAttempts),
 			BatchSize:    int(config.MaxWriteBatchSize),
+			BatchTimeout: config.BatchWriteInterval,
 			Async:        false,
 			Logger:       config.Logger,
 			ErrorLogger:  config.Logger,

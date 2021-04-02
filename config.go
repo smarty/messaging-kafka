@@ -3,6 +3,7 @@ package kafka
 import (
 	"context"
 	"math"
+	"time"
 
 	"github.com/segmentio/kafka-go"
 )
@@ -14,6 +15,7 @@ type configuration struct {
 	RequiredWrites     requiredWrites
 	MaxWriteAttempts   uint8
 	MaxWriteBatchSize  uint16
+	BatchWriteInterval time.Duration
 	Context            context.Context
 	Logger             Logger
 }
@@ -41,6 +43,9 @@ func (singleton) MaxWriteAttempts(value uint8) option {
 func (singleton) MaxWriteBatchSize(value uint16) option {
 	return func(this *configuration) { this.MaxWriteBatchSize = value }
 }
+func (singleton) BatchWriteInterval(value time.Duration) option {
+	return func(this *configuration) { this.BatchWriteInterval = value }
+}
 
 func (singleton) Context(value context.Context) option {
 	return func(this *configuration) { this.Context = value }
@@ -66,6 +71,7 @@ func (singleton) defaults(options ...option) []option {
 		Options.RequiredWrites(RequiredWritesOne),
 		Options.MaxWriteAttempts(1),
 		Options.MaxWriteBatchSize(math.MaxUint16),
+		Options.BatchWriteInterval(time.Millisecond),
 		Options.Context(context.Background()),
 		Options.Logger(defaultLogger),
 	}, options...)
