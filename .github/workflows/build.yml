@@ -13,6 +13,7 @@ jobs:
     - uses: actions/setup-go@v2
     - uses: actions/cache@v1
       with:
+        go-version: 1.16
         path: ~/go/pkg/mod
         key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
         restore-keys: |
