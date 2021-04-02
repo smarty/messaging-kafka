@@ -9,7 +9,26 @@ import (
 	"github.com/smartystreets/messaging/v3"
 )
 
+type myMessageHandler struct{}
+
+func (this myMessageHandler) Handle(ctx context.Context, messages ...interface{}) {
+
+}
+
 func main() {
+	//transportConnector := kafka.NewConnector()
+	//
+	//consumer := streaming.New(transportConnector,
+	//	streaming.Options.Subscriptions(
+	//		streaming.NewSubscription("my-topic",
+	//			streaming.SubscriptionOptions.FullDeliveryToHandler(true),
+	//			streaming.SubscriptionOptions.AddWorkers(
+	//				retry.New(myMessageHandler{}),
+	//			),
+	//		),
+	//	),
+	//)
+
 	connector := kafka.NewConnector()
 	defer func() { _ = connector.Close() }()
 
