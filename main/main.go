@@ -27,26 +27,31 @@ func main() {
 
 		defer func() { _ = writer.Close() }()
 
-		_, _ = writer.Write(context.Background(), messaging.Dispatch{
-			SourceID:        1,
-			MessageID:       2,
-			CorrelationID:   3,
-			Timestamp:       time.Now().UTC(),
-			Expiration:      0,
-			Durable:         false,
-			Topic:           "my-topic",
-			Partition:       0,
-			MessageType:     "sample-message-type",
-			ContentType:     "application/json",
-			ContentEncoding: "utf8",
-			Payload:         []byte("Hello, World!"),
-			Headers:         nil,
-			Message:         nil,
-		})
+		i := 0
+		for {
+			_, _ = writer.Write(context.Background(), messaging.Dispatch{
+				SourceID:        1,
+				MessageID:       2,
+				CorrelationID:   3,
+				Timestamp:       time.Now().UTC(),
+				Expiration:      0,
+				Durable:         false,
+				Topic:           "my-topic",
+				Partition:       0,
+				MessageType:     "sample-message-type",
+				ContentType:     "application/json",
+				ContentEncoding: "utf8",
+				Payload:         []byte("Hello, World!"),
+				Headers:         nil,
+				Message:         nil,
+			})
 
-		err1 = writer.Commit()
-		if err1 != nil {
-			panic(err1)
+			err1 = writer.Commit()
+			if err1 != nil {
+				panic(err1)
+			}
+			i++
+			log.Println("[INFO] Message written.", i)
 		}
 	}()
 
@@ -57,9 +62,11 @@ func main() {
 	defer func() { _ = reader.Close() }()
 
 	stream, err := reader.Stream(context.Background(), messaging.StreamConfig{
-		StreamName: "my-topic",
-		Partition:  0,
-		Sequence:   0,
+		GroupName: "my-group",
+		Topics:    []string{"my-topic"},
+		//StreamName: "my-topic",
+		//Partition:  0,
+		//Sequence:   0,
 	})
 	if err != nil {
 		panic(err)
@@ -76,16 +83,16 @@ func main() {
 		}
 
 		log.Println("DeliveryID", delivery.DeliveryID)
-		log.Println("SourceID", delivery.SourceID)
-		log.Println("MessageID", delivery.MessageID)
-		log.Println("CorrelationID", delivery.CorrelationID)
-		log.Println("Timestamp", delivery.Timestamp)
-		log.Println("Durable", delivery.Durable)
-		log.Println("MessageType", delivery.MessageType)
-		log.Println("ContentType", delivery.ContentType)
-		log.Println("ContentEncoding", delivery.ContentEncoding)
-		log.Println("Payload", string(delivery.Payload))
-		log.Println("------------------------------")
+		//log.Println("SourceID", delivery.SourceID)
+		//log.Println("MessageID", delivery.MessageID)
+		//log.Println("CorrelationID", delivery.CorrelationID)
+		//log.Println("Timestamp", delivery.Timestamp)
+		//log.Println("Durable", delivery.Durable)
+		//log.Println("MessageType", delivery.MessageType)
+		//log.Println("ContentType", delivery.ContentType)
+		//log.Println("ContentEncoding", delivery.ContentEncoding)
+		//log.Println("Payload", string(delivery.Payload))
+		//log.Println("------------------------------")
 
 		err = stream.Acknowledge(context.Background(), delivery)
 		if err != nil {
