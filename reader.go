@@ -46,7 +46,7 @@ func (this defaultReader) openReader(config messaging.StreamConfig) (reader *kaf
 	}
 
 	reader = kafka.NewReader(kafkaConfig)
-	if config.Sequence > 0 && len(config.GroupName) > 0 {
+	if config.Sequence > 0 && len(config.GroupName) == 0 {
 		err = reader.SetOffset(int64(config.Sequence))
 	}
 
