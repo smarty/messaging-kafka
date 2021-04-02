@@ -12,15 +12,15 @@ type defaultStream struct {
 	config        configuration
 	reader        *kafka.Reader
 	consumerGroup bool
-	lifecycle     context.Context
 	cancel        func()
 }
 
 func newStream(config configuration, reader *kafka.Reader, consumerGroup bool, parent context.Context) messaging.Stream {
 	this := defaultStream{config: config, reader: reader, consumerGroup: consumerGroup}
-	this.lifecycle, this.cancel = context.WithCancel(parent)
+	lifecycle, cancel := context.WithCancel(parent)
+	this.cancel = cancel
 	go func() {
-		<-this.lifecycle.Done()
+		<-lifecycle.Done()
 		_ = reader.Close()
 	}()
 	return this
