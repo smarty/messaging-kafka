@@ -86,5 +86,10 @@ func main() {
 		log.Println("ContentEncoding", delivery.ContentEncoding)
 		log.Println("Payload", string(delivery.Payload))
 		log.Println("------------------------------")
+
+		err = stream.Acknowledge(context.Background(), delivery)
+		if err != nil {
+			panic(err)
+		}
 	}
 }

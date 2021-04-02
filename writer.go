@@ -3,6 +3,7 @@ package kafka
 import (
 	"context"
 	"encoding/binary"
+	"strconv"
 
 	"github.com/segmentio/kafka-go"
 	"github.com/smartystreets/messaging/v3"
@@ -61,6 +62,9 @@ func (this *defaultWriter) write(dispatch messaging.Dispatch) {
 		Key:   computeMessageKey(dispatch.Partition),
 		Value: dispatch.Payload,
 		Headers: []kafka.Header{
+			{Key: "source-id", Value: []byte(strconv.FormatUint(dispatch.SourceID, 10))},   // TODO: don't do this
+			{Key: "message-id", Value: []byte(strconv.FormatUint(dispatch.MessageID, 10))}, // TODO: don't do this
+
 			// TODO: merge these fields into a numeric value
 			{Key: "message-type", Value: []byte(dispatch.MessageType)},
 			{Key: "content-type", Value: []byte(dispatch.ContentType)},

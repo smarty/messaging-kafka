@@ -2,6 +2,7 @@ package kafka
 
 import (
 	"context"
+	"strconv"
 
 	"github.com/segmentio/kafka-go"
 	"github.com/smartystreets/messaging/v3"
@@ -43,11 +44,20 @@ func (this defaultStream) Read(ctx context.Context, target *messaging.Delivery) 
 	//ContentEncoding string
 	target.Payload = raw.Value
 
-	// TODO: if the MessageType isn't subscribed to?
-	// do we recurse/iterate and wait for more? that means we can't ack up to that message and a restart
-	// causes the work to be done again
-	// if we don't filter here, we're doing a lot of extra deserialization work that doesn't need to be done
-	// only to have the message ignored at a later time
+	for _, header := range raw.Headers {
+		switch header.Key {
+		case "source-id":
+			target.SourceID, _ = strconv.ParseUint(string(header.Value), 10, 64) // TODO: don't do this
+		case "message-id":
+			target.MessageID, _ = strconv.ParseUint(string(header.Value), 10, 64) // TODO: don't do this
+		case "message-type":
+			target.MessageType = string(header.Value) // TODO: don't do this
+		case "content-type":
+			target.ContentType = string(header.Value) // TODO: don't do this
+		case "content-encoding":
+			target.ContentEncoding = string(header.Value) // TODO: don't do this
+		}
+	}
 
 	return nil
 }
