@@ -2,22 +2,28 @@ package kafka
 
 import (
 	"context"
-	"strconv"
+	"encoding/binary"
 
 	"github.com/segmentio/kafka-go"
 	"github.com/smartystreets/messaging/v3"
 )
 
 type defaultStream struct {
-	config        configuration
+	messageTypes  map[uint32]string
+	contentTypes  map[uint8]string
 	reader        *kafka.Reader
 	consumerGroup bool
 	lifecycle     context.Context
-	cancel        func()
+	cancel        context.CancelFunc
 }
 
 func newStream(config configuration, reader *kafka.Reader, consumerGroup bool, parent context.Context) messaging.Stream {
-	this := defaultStream{config: config, reader: reader, consumerGroup: consumerGroup}
+	this := defaultStream{
+		messageTypes:  config.MessageTypeIdentifiers,
+		contentTypes:  config.ContentTypeIdentifiers,
+		reader:        reader,
+		consumerGroup: consumerGroup,
+	}
 	this.lifecycle, this.cancel = context.WithCancel(parent)
 	go this.awaitCancel()
 	return this
@@ -41,22 +47,23 @@ func (this defaultStream) Read(ctx context.Context, target *messaging.Delivery) 
 
 	for _, header := range raw.Headers {
 		switch header.Key {
-		case "source-id":
-			target.SourceID, _ = strconv.ParseUint(string(header.Value), 10, 64)
-		case "message-id":
-			target.MessageID, _ = strconv.ParseUint(string(header.Value), 10, 64)
-		case "correlation-id":
-			target.CorrelationID, _ = strconv.ParseUint(string(header.Value), 10, 64)
-		case "message-type":
-			target.MessageType = string(header.Value)
-		case "content-type":
-			target.ContentType = string(header.Value)
-		case "content-encoding":
-			target.ContentEncoding = string(header.Value)
+		case messageTypeHeaderName:
+			this.populateMessageTypeAndContentType(header, target)
 		}
 	}
 
 	return nil
+}
+func (this defaultStream) populateMessageTypeAndContentType(source kafka.Header, target *messaging.Delivery) {
+	if len(source.Value) < 4 {
+		return // TODO: error handling
+	}
+
+	value := binary.LittleEndian.Uint32(source.Value)
+	messageTypeID := value >> 8
+	contentTypeID := uint8(value << 24 >> 24)
+	target.MessageType = this.messageTypes[messageTypeID] // TODO: error handling if not found
+	target.ContentType = this.contentTypes[contentTypeID] // TODO: error handling if not found
 }
 
 func (this defaultStream) Acknowledge(ctx context.Context, deliveries ...messaging.Delivery) error {
@@ -76,3 +83,5 @@ func (this defaultStream) Close() error {
 	this.cancel()
 	return nil
 }
+
+const messageTypeHeaderName = "t"

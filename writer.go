@@ -3,23 +3,24 @@ package kafka
 import (
 	"context"
 	"encoding/binary"
-	"strconv"
 
 	"github.com/segmentio/kafka-go"
 	"github.com/smartystreets/messaging/v3"
 )
 
 type defaultWriter struct {
-	config    configuration
-	writer    *kafka.Writer
-	lifecycle context.Context
-	cancel    func()
-	pending   []kafka.Message
+	messageTypes map[string]uint32
+	contentTypes map[string]uint8
+	writer       *kafka.Writer
+	lifecycle    context.Context
+	cancel       context.CancelFunc
+	pending      []kafka.Message
 }
 
 func newWriter(config configuration, parent context.Context) messaging.CommitWriter {
 	this := &defaultWriter{
-		config: config,
+		messageTypes: config.messageTypeIdentifiers,
+		contentTypes: config.contentTypeIdentifiers,
 		writer: &kafka.Writer{
 			Addr:         kafka.TCP(config.Brokers...),
 			Compression:  computeCompressionMethod(config.CompressionMethod),
@@ -44,27 +45,35 @@ func newWriter(config configuration, parent context.Context) messaging.CommitWri
 }
 
 func (this *defaultWriter) Write(_ context.Context, dispatches ...messaging.Dispatch) (int, error) {
-	for _, dispatch := range dispatches {
+	for i, dispatch := range dispatches {
+		if len(dispatch.Topic) == 0 {
+			return i, messaging.ErrEmptyDispatchTopic
+		}
+
 		this.write(dispatch)
 	}
 
+	// TODO:if configured as regular writer, now call underlying this.writer.Write(); otherwise return len(dispatches), nil
 	return len(dispatches), nil
 }
 func (this *defaultWriter) write(dispatch messaging.Dispatch) {
+	// TODO: append other headers
 	this.pending = append(this.pending, kafka.Message{
 		Time:  dispatch.Timestamp,
 		Topic: dispatch.Topic,
 		Key:   computeMessageKey(dispatch.Partition),
 		Value: dispatch.Payload,
 		Headers: []kafka.Header{
-			{Key: "source-id", Value: []byte(strconv.FormatUint(dispatch.SourceID, 10))},
-			{Key: "message-id", Value: []byte(strconv.FormatUint(dispatch.MessageID, 10))},
-			{Key: "correlation-id", Value: []byte(strconv.FormatUint(dispatch.CorrelationID, 10))},
-			{Key: "message-type", Value: []byte(dispatch.MessageType)},
-			{Key: "content-type", Value: []byte(dispatch.ContentType)},
-			{Key: "content-encoding", Value: []byte(dispatch.ContentEncoding)},
+			{Key: messageTypeHeaderName, Value: this.computeMessageType(dispatch.MessageType, dispatch.ContentType)},
 		},
 	})
+}
+func (this *defaultWriter) computeMessageType(messageType, contentType string) []byte {
+	value := this.messageTypes[messageType] << 8    // TODO: error handling if not found
+	value += uint32(this.contentTypes[contentType]) // TODO: error handling if not found
+	target := make([]byte, 4)
+	binary.LittleEndian.PutUint32(target, value)
+	return target
 }
 func computeMessageKey(partition uint64) []byte {
 	if partition == 0 {

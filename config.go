@@ -9,17 +9,21 @@ import (
 )
 
 type configuration struct {
-	Brokers            []string
-	CompressionMethod  compressionMethod
-	PartitionSelection partitionSelection
-	RequiredWrites     requiredWrites
-	MaxWriteAttempts   uint8
-	MaxWriteBatchSize  uint16
-	BatchWriteInterval time.Duration
-	Context            context.Context
-	Monitor            Monitor
-	Logger             Logger
-	DriverLogger       Logger
+	Brokers                []string
+	MessageTypeIdentifiers map[uint32]string
+	messageTypeIdentifiers map[string]uint32
+	ContentTypeIdentifiers map[uint8]string
+	contentTypeIdentifiers map[string]uint8
+	CompressionMethod      compressionMethod
+	PartitionSelection     partitionSelection
+	RequiredWrites         requiredWrites
+	MaxWriteAttempts       uint8
+	MaxWriteBatchSize      uint16
+	BatchWriteInterval     time.Duration
+	Context                context.Context
+	Monitor                Monitor
+	Logger                 Logger
+	DriverLogger           Logger
 }
 
 var Options singleton
@@ -29,6 +33,28 @@ type option func(*configuration)
 
 func (singleton) Brokers(value ...string) option {
 	return func(this *configuration) { this.Brokers = value }
+}
+func (singleton) MessageTypeIdentifiers(value map[uint32]string) option {
+	reverse := make(map[string]uint32, len(value))
+	for key, item := range value {
+		reverse[item] = key
+	}
+
+	return func(this *configuration) {
+		this.MessageTypeIdentifiers = value
+		this.messageTypeIdentifiers = reverse
+	}
+}
+func (singleton) ContentTypeIdentifiers(value map[uint8]string) option {
+	reverse := make(map[string]uint8, len(value))
+	for key, item := range value {
+		reverse[item] = key
+	}
+
+	return func(this *configuration) {
+		this.ContentTypeIdentifiers = value
+		this.contentTypeIdentifiers = reverse
+	}
 }
 func (singleton) CompressionMethod(value compressionMethod) option {
 	return func(this *configuration) { this.CompressionMethod = value }

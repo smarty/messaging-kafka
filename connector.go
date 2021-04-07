@@ -9,7 +9,7 @@ import (
 type defaultConnector struct {
 	config    configuration
 	lifecycle context.Context
-	cancel    func()
+	cancel    context.CancelFunc
 }
 
 func NewConnector(options ...option) messaging.Connector {

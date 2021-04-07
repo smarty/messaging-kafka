@@ -10,7 +10,7 @@ import (
 type defaultReader struct {
 	config    configuration
 	lifecycle context.Context
-	cancel    func()
+	cancel    context.CancelFunc
 }
 
 func newReader(config configuration, parent context.Context) messaging.Reader {

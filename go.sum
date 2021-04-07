@@ -12,10 +12,12 @@ github.com/pmezard/go-difflib v1.0.0 h1:4DBwDE0NGyQoBHbLQYPwSUPoCMWR5BEzIk/f1lZb
 github.com/pmezard/go-difflib v1.0.0/go.mod h1:iKH77koFhYxTK1pcRnkKkqfTogsbg7gZNVY4sRDYZ/4=
 github.com/segmentio/kafka-go v0.4.12 h1:iT1eSKKr2AfhaLguSay6esvWaQjuhrNccSDtb+VCLIg=
 github.com/segmentio/kafka-go v0.4.12/go.mod h1:BVDwBTF24avtlj4l8/xsWNb4papVeg16+jO6/0qjvhA=
+github.com/smartystreets/assertions v1.2.0 h1:42S6lae5dvLc7BrLu/0ugRtcFVjoJNMC/N3yZFZkDFs=
 github.com/smartystreets/assertions v1.2.0/go.mod h1:tcbTF8ujkAEcZ8TElKY+i30BzYlVhC/LOxJk7iOWnoo=
+github.com/smartystreets/gunit v1.4.2 h1:tyWYZffdPhQPfK5VsMQXfauwnJkqg7Tv5DLuQVYxq3Q=
 github.com/smartystreets/gunit v1.4.2/go.mod h1:ZjM1ozSIMJlAz/ay4SG8PeKF00ckUp+zMHZXV9/bvak=
-github.com/smartystreets/messaging/v3 v3.3.0 h1:AQKByYSaWyY2ssStuwSY4olyPM1mYtsPOLFKMYBaV8A=
-github.com/smartystreets/messaging/v3 v3.3.0/go.mod h1:ui3R03Wc1jV1s749V9hzGvpqHiPIf8mCI6ZTqwtnNqU=
+github.com/smartystreets/messaging/v3 v3.4.1 h1:+Hh2MD5f+dHX5sGbzyd/gj3CeYYxJYtQPfWERVd3eEo=
+github.com/smartystreets/messaging/v3 v3.4.1/go.mod h1:ui3R03Wc1jV1s749V9hzGvpqHiPIf8mCI6ZTqwtnNqU=
 github.com/streadway/amqp v1.0.0/go.mod h1:AZpEONHx3DKn8O/DFsRAY58/XVQiIPMTMB1SddzLXVw=
 github.com/stretchr/objx v0.1.0/go.mod h1:HFkY916IF+rwdDfMAkV7OtwuqBVzrE8GR6GFx+wExME=
 github.com/stretchr/testify v1.6.1 h1:hDPOHmpOpP40lSULcqw7IrRb/u7w6RpDC9399XyoNd0=
