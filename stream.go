@@ -40,8 +40,10 @@ func (this defaultStream) Read(ctx context.Context, target *messaging.Delivery) 
 	}
 
 	target.Upstream = raw
-	target.DeliveryID = uint64(raw.Offset)
 	target.Timestamp = raw.Time
+	target.Topic = raw.Topic
+	target.Partition = uint64(raw.Partition)
+	target.DeliveryID = uint64(raw.Offset)
 	target.Durable = true
 	target.Payload = raw.Value
 	if len(raw.Headers) > 1 {
