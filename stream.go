@@ -44,11 +44,16 @@ func (this defaultStream) Read(ctx context.Context, target *messaging.Delivery) 
 	target.Timestamp = raw.Time
 	target.Durable = true
 	target.Payload = raw.Value
+	if len(raw.Headers) > 1 {
+		target.Headers = make(map[string]interface{}, len(raw.Headers)-1)
+	}
 
 	for _, header := range raw.Headers {
 		switch header.Key {
 		case messageTypeHeaderName:
 			this.populateMessageTypeAndContentType(header, target)
+		default:
+			target.Headers[header.Key] = string(header.Value)
 		}
 	}
 

@@ -3,6 +3,7 @@ package kafka
 import (
 	"context"
 	"encoding/binary"
+	"fmt"
 
 	"github.com/segmentio/kafka-go"
 	"github.com/smartystreets/messaging/v3"
@@ -53,12 +54,11 @@ func (this *defaultWriter) Write(_ context.Context, dispatches ...messaging.Disp
 		this.write(dispatch)
 	}
 
-	// TODO:if configured as regular writer, now call underlying this.writer.Write(); otherwise return len(dispatches), nil
+	// TODO: if configured as regular writer, now call underlying this.writer.Write(); otherwise return len(dispatches), nil
 	return len(dispatches), nil
 }
 func (this *defaultWriter) write(dispatch messaging.Dispatch) {
-	// TODO: append other headers
-	this.pending = append(this.pending, kafka.Message{
+	message := kafka.Message{
 		Time:  dispatch.Timestamp,
 		Topic: dispatch.Topic,
 		Key:   computeMessageKey(dispatch.Partition),
@@ -66,7 +66,16 @@ func (this *defaultWriter) write(dispatch messaging.Dispatch) {
 		Headers: []kafka.Header{
 			{Key: messageTypeHeaderName, Value: this.computeMessageType(dispatch.MessageType, dispatch.ContentType)},
 		},
-	})
+	}
+
+	for key, value := range dispatch.Headers {
+		message.Headers = append(message.Headers, kafka.Header{
+			Key:   key,
+			Value: []byte(fmt.Sprint(value)),
+		})
+	}
+
+	this.pending = append(this.pending, message)
 }
 func (this *defaultWriter) computeMessageType(messageType, contentType string) []byte {
 	value := this.messageTypes[messageType] << 8    // TODO: error handling if not found
