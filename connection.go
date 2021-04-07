@@ -23,11 +23,11 @@ func (this defaultConnection) Reader(_ context.Context) (messaging.Reader, error
 }
 
 func (this defaultConnection) Writer(_ context.Context) (messaging.Writer, error) {
-	return nil, nil
+	return newWriter(this.config, this.lifecycle, false), nil
 }
 
 func (this defaultConnection) CommitWriter(_ context.Context) (messaging.CommitWriter, error) {
-	return newWriter(this.config, this.lifecycle), nil
+	return newWriter(this.config, this.lifecycle, true), nil
 }
 
 func (this defaultConnection) Close() error {
