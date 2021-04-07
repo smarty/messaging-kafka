@@ -10,6 +10,8 @@ import (
 )
 
 type defaultWriter struct {
+	logger        Logger
+	monitor       Monitor
 	messageTypes  map[string]uint32
 	contentTypes  map[string]uint8
 	transactional bool
@@ -21,6 +23,8 @@ type defaultWriter struct {
 
 func newWriter(config configuration, parent context.Context, transactional bool) messaging.CommitWriter {
 	this := &defaultWriter{
+		logger:        config.Logger,
+		monitor:       config.Monitor,
 		messageTypes:  config.messageTypeIdentifiers,
 		contentTypes:  config.contentTypeIdentifiers,
 		transactional: transactional,

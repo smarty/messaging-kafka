@@ -10,6 +10,8 @@ import (
 )
 
 type defaultStream struct {
+	logger        Logger
+	monitor       Monitor
 	messageTypes  map[uint32]string
 	contentTypes  map[uint8]string
 	reader        *kafka.Reader
@@ -20,6 +22,8 @@ type defaultStream struct {
 
 func newStream(config configuration, reader *kafka.Reader, consumerGroup bool, parent context.Context) messaging.Stream {
 	this := defaultStream{
+		logger:        config.Logger,
+		monitor:       config.Monitor,
 		messageTypes:  config.MessageTypeIdentifiers,
 		contentTypes:  config.ContentTypeIdentifiers,
 		reader:        reader,

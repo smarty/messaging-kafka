@@ -9,12 +9,18 @@ import (
 
 type defaultReader struct {
 	config    configuration
+	logger    Logger
+	monitor   Monitor
 	lifecycle context.Context
 	cancel    context.CancelFunc
 }
 
 func newReader(config configuration, parent context.Context) messaging.Reader {
-	this := defaultReader{config: config}
+	this := defaultReader{
+		config:  config,
+		logger:  config.Logger,
+		monitor: config.Monitor,
+	}
 	this.lifecycle, this.cancel = context.WithCancel(parent)
 	return this
 }
