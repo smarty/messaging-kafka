@@ -51,6 +51,9 @@ func (this defaultStream) Read(ctx context.Context, target *messaging.Delivery) 
 	target.DeliveryID = uint64(raw.Offset)
 	target.Durable = true
 	target.Payload = raw.Value
+
+	// TODO: magic byte (0x0), 32-bit unsigned integer = schema ID, payload
+
 	if len(raw.Headers) > 1 {
 		target.Headers = make(map[string]interface{}, len(raw.Headers)-1) // at least one header for the type
 	}
