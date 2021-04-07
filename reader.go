@@ -2,7 +2,6 @@ package kafka
 
 import (
 	"context"
-	"io"
 
 	"github.com/segmentio/kafka-go"
 	"github.com/smartystreets/messaging/v3"
@@ -59,10 +58,6 @@ func (this defaultReader) openReader(config messaging.StreamConfig) (reader *kaf
 	}
 
 	return reader, err
-}
-func (this defaultReader) awaitCancel(resource io.Closer) {
-	<-this.lifecycle.Done()
-	_ = resource.Close()
 }
 
 func (this defaultReader) Close() error {
