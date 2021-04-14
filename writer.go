@@ -75,19 +75,20 @@ func (this *defaultWriter) newMessage(dispatch messaging.Dispatch) kafka.Message
 	return kafka.Message{
 		Time:    dispatch.Timestamp,
 		Topic:   dispatch.Topic,
-		Headers: computeHeaders(dispatch),
-		Key:     computeMessageKey(dispatch.Partition),
+		Headers: computeHeadersFromDispatch(dispatch),
+		Key:     computeKafkaMessageKey(dispatch.Partition),
 		Value:   append(messageType, dispatch.Payload...),
 	}
 }
 func (this *defaultWriter) computeMessageType(messageType, contentType string) []byte {
+	// header: 0x0 magic byte and 32-bit unsigned integer containing message type and content type
 	value := this.messageTypes[messageType] << 8
 	value += uint32(this.contentTypes[contentType])
-	target := make([]byte, 4)
-	binary.LittleEndian.PutUint32(target, value)
+	target := make([]byte, 5)
+	binary.LittleEndian.PutUint32(target[1:], value)
 	return target
 }
-func computeMessageKey(partition uint64) []byte {
+func computeKafkaMessageKey(partition uint64) []byte {
 	if partition == 0 {
 		return nil
 	}
@@ -96,7 +97,7 @@ func computeMessageKey(partition uint64) []byte {
 	binary.LittleEndian.PutUint64(target, partition)
 	return target
 }
-func computeHeaders(dispatch messaging.Dispatch) []kafka.Header {
+func computeHeadersFromDispatch(dispatch messaging.Dispatch) []kafka.Header {
 	if len(dispatch.Headers) == 0 {
 		return nil
 	}

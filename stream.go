@@ -51,24 +51,22 @@ func (this defaultStream) Read(ctx context.Context, target *messaging.Delivery) 
 	target.DeliveryID = uint64(raw.Offset)
 	target.Durable = true
 	target.Payload = raw.Value
-	target.Headers = computeHeaders2(raw.Headers)
-
-	if this.populateMessageTypeAndContentType(raw.Value, target) {
-		target.Payload = raw.Value[0:4]
-	}
+	target.Headers = computeHeadersFromMessage(raw.Headers)
+	target.Payload = this.populateMessageTypeAndContentType(raw.Value, target)
 
 	return nil
 }
-func (this defaultStream) populateMessageTypeAndContentType(source []byte, target *messaging.Delivery) bool {
-	if len(source) < 4 {
+func (this defaultStream) populateMessageTypeAndContentType(source []byte, target *messaging.Delivery) []byte {
+	// header: 0x0 magic byte and 32-bit unsigned integer containing message type and content type
+	if len(source) < 5 {
 		target.MessageType = "unknown-message-type"
 		target.ContentType = "unknown-content-type"
-		return false
+		return source
 	}
 
-	value := binary.LittleEndian.Uint32(source)
-	messageTypeID := value >> 8
-	contentTypeID := uint8(value << 24 >> 24)
+	value := binary.LittleEndian.Uint32(source[1:])
+	messageTypeID := value >> 8               // 24 bits (16,777,216 values)
+	contentTypeID := uint8(value << 24 >> 24) // 08 bits (       255 values)
 	messageType, containsMessageType := this.messageTypes[messageTypeID]
 	contentType, containsContentType := this.contentTypes[contentTypeID]
 
@@ -81,9 +79,9 @@ func (this defaultStream) populateMessageTypeAndContentType(source []byte, targe
 
 	target.MessageType = messageType
 	target.ContentType = contentType
-	return true
+	return source[5:]
 }
-func computeHeaders2(source []kafka.Header) map[string]interface{} {
+func computeHeadersFromMessage(source []kafka.Header) map[string]interface{} {
 	if len(source) == 0 {
 		return nil
 	}
