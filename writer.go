@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/binary"
 	"fmt"
-
 	"github.com/segmentio/kafka-go"
 	"github.com/smartystreets/messaging/v3"
 )
@@ -71,25 +70,14 @@ func (this *defaultWriter) Write(_ context.Context, dispatches ...messaging.Disp
 	return len(dispatches), nil
 }
 func (this *defaultWriter) newMessage(dispatch messaging.Dispatch) kafka.Message {
-	targetHeaders := make([]kafka.Header, 0, len(dispatch.Headers)+1)
-	targetHeaders = append(targetHeaders, kafka.Header{
-		Key:   messageTypeHeaderName,
-		Value: this.computeMessageType(dispatch.MessageType, dispatch.ContentType),
-	})
-
-	for key, value := range dispatch.Headers {
-		targetHeaders = append(targetHeaders, kafka.Header{
-			Key:   key,
-			Value: []byte(fmt.Sprint(value)),
-		})
-	}
+	messageType := this.computeMessageType(dispatch.MessageType, dispatch.ContentType)
 
 	return kafka.Message{
 		Time:    dispatch.Timestamp,
 		Topic:   dispatch.Topic,
+		Headers: computeHeaders(dispatch),
 		Key:     computeMessageKey(dispatch.Partition),
-		Value:   dispatch.Payload,
-		Headers: targetHeaders,
+		Value:   append(messageType, dispatch.Payload...),
 	}
 }
 func (this *defaultWriter) computeMessageType(messageType, contentType string) []byte {
@@ -107,6 +95,21 @@ func computeMessageKey(partition uint64) []byte {
 	target := make([]byte, 8)
 	binary.LittleEndian.PutUint64(target, partition)
 	return target
+}
+func computeHeaders(dispatch messaging.Dispatch) []kafka.Header {
+	if len(dispatch.Headers) == 0 {
+		return nil
+	}
+
+	targetHeaders := make([]kafka.Header, 0, len(dispatch.Headers))
+	for key, value := range dispatch.Headers {
+		targetHeaders = append(targetHeaders, kafka.Header{
+			Key:   key,
+			Value: []byte(fmt.Sprint(value)),
+		})
+	}
+
+	return targetHeaders
 }
 
 func (this *defaultWriter) Commit() error {

@@ -51,29 +51,19 @@ func (this defaultStream) Read(ctx context.Context, target *messaging.Delivery) 
 	target.DeliveryID = uint64(raw.Offset)
 	target.Durable = true
 	target.Payload = raw.Value
+	target.Headers = computeHeaders2(raw.Headers)
 
-	// TODO: magic byte (0x0), 32-bit unsigned integer = schema ID, payload
-
-	if len(raw.Headers) > 1 {
-		target.Headers = make(map[string]interface{}, len(raw.Headers)-1) // at least one header for the type
-	}
-
-	for _, header := range raw.Headers {
-		switch header.Key {
-		case messageTypeHeaderName:
-			this.populateMessageTypeAndContentType(header.Value, target)
-		default:
-			target.Headers[header.Key] = string(header.Value)
-		}
+	if this.populateMessageTypeAndContentType(raw.Value, target) {
+		target.Payload = raw.Value[0:4]
 	}
 
 	return nil
 }
-func (this defaultStream) populateMessageTypeAndContentType(source []byte, target *messaging.Delivery) {
+func (this defaultStream) populateMessageTypeAndContentType(source []byte, target *messaging.Delivery) bool {
 	if len(source) < 4 {
 		target.MessageType = "unknown-message-type"
 		target.ContentType = "unknown-content-type"
-		return
+		return false
 	}
 
 	value := binary.LittleEndian.Uint32(source)
@@ -91,6 +81,20 @@ func (this defaultStream) populateMessageTypeAndContentType(source []byte, targe
 
 	target.MessageType = messageType
 	target.ContentType = contentType
+	return true
+}
+func computeHeaders2(source []kafka.Header) map[string]interface{} {
+	if len(source) == 0 {
+		return nil
+	}
+
+	target := make(map[string]interface{}, len(source))
+
+	for _, header := range source {
+		target[header.Key] = string(header.Value)
+	}
+
+	return target
 }
 
 func (this defaultStream) Acknowledge(ctx context.Context, deliveries ...messaging.Delivery) error {
@@ -110,5 +114,3 @@ func (this defaultStream) Close() error {
 	this.cancel()
 	return nil
 }
-
-const messageTypeHeaderName = "t"
