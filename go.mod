@@ -4,5 +4,5 @@ go 1.16
 
 require (
 	github.com/segmentio/kafka-go v0.4.12
-	github.com/smartystreets/messaging/v3 v3.5.0
+	github.com/smartystreets/messaging/v3 v3.5.1
 )
