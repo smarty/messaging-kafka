@@ -40,7 +40,7 @@ func main() {
 		streaming.Options.Logger(logger),
 		streaming.Options.Subscriptions(
 			streaming.NewSubscription("my-topic",
-				streaming.SubscriptionOptions.Name("my-group"),
+				// streaming.SubscriptionOptions.Name("my-group"),
 				streaming.SubscriptionOptions.FullDeliveryToHandler(true),
 				streaming.SubscriptionOptions.AddWorkers(
 					retry.New(myMessageHandler{}),
