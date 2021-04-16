@@ -2,13 +2,11 @@ package main
 
 import (
 	"context"
-	"log"
-	"time"
-
 	"github.com/smartystreets/messaging-kafka"
 	"github.com/smartystreets/messaging/v4"
 	"github.com/smartystreets/messaging/v4/handlers/retry"
 	"github.com/smartystreets/messaging/v4/streaming"
+	"log"
 )
 
 type myMessageHandler struct{}
@@ -41,13 +39,16 @@ func main() {
 		streaming.Options.Logger(logger),
 		streaming.Options.Subscriptions(
 			streaming.SubscriptionOptions.AddStream(
-				streaming.StreamOptions.StreamName("my-topic"),
-			),
-			streaming.SubscriptionOptions.AddStream(
 				streaming.StreamOptions.StreamName("my-topic-a"),
+				streaming.StreamOptions.Sequence(2293),
 			),
 			streaming.SubscriptionOptions.AddStream(
 				streaming.StreamOptions.StreamName("my-topic-b"),
+				streaming.StreamOptions.Sequence(2292),
+			),
+			streaming.SubscriptionOptions.AddStream(
+				streaming.StreamOptions.StreamName("my-topic-c"),
+				streaming.StreamOptions.Sequence(2286),
 			),
 			streaming.SubscriptionOptions.FullDeliveryToHandler(true),
 			streaming.SubscriptionOptions.AddWorkers(retry.New(myMessageHandler{})),
@@ -62,53 +63,56 @@ func main() {
 	}
 	defer func() { _ = connection.Close() }()
 
-	go func() {
-		time.Sleep(time.Second)
-		writer, err1 := connection.CommitWriter(context.Background())
-		if err1 != nil {
-			panic(err)
-		}
-
-		defer func() { _ = writer.Close() }()
-
-		i := 0
-		for {
-			topicSuffix := "-a"
-			if i%2 == 0 {
-				topicSuffix = "-b"
-			}
-			topic := "my-topic" + topicSuffix
-			// log.Println("[INFO] Writing message to:", topic)
-
-			_, err = writer.Write(context.Background(), messaging.Dispatch{
-				SourceID:      1,
-				MessageID:     2,
-				CorrelationID: 3,
-				Timestamp:     time.Now().UTC(),
-				Expiration:    0,
-				Durable:       false,
-				Topic:         topic,
-				Partition:     0,
-				MessageType:   "sample-message-type",
-				ContentType:   "application/json",
-				Payload:       []byte("Hello, World!"),
-				Headers:       nil,
-				Message:       nil,
-			})
-
-			if err != nil {
-				panic(err)
-			}
-
-			err1 = writer.Commit()
-			if err1 != nil {
-				panic(err1)
-			}
-			i++
-			//log.Println("[INFO] Message written.", i)
-			time.Sleep(time.Second / 4)
-		}
-	}()
+	//go func() {
+	//	time.Sleep(time.Second)
+	//	writer, err1 := connection.CommitWriter(context.Background())
+	//	if err1 != nil {
+	//		panic(err)
+	//	}
+	//
+	//	defer func() { _ = writer.Close() }()
+	//
+	//	i := 0
+	//	for {
+	//		topicSuffix := "-a"
+	//		if modulo := i % 3; modulo == 1 {
+	//			topicSuffix = "-b"
+	//		} else if modulo == 2 {
+	//			topicSuffix = "-c"
+	//		}
+	//
+	//		topic := "my-topic" + topicSuffix
+	//		// log.Println("[INFO] Writing message to:", topic)
+	//
+	//		_, err = writer.Write(context.Background(), messaging.Dispatch{
+	//			SourceID:      1,
+	//			MessageID:     2,
+	//			CorrelationID: 3,
+	//			Timestamp:     time.Now().UTC(),
+	//			Expiration:    0,
+	//			Durable:       false,
+	//			Topic:         topic,
+	//			Partition:     0,
+	//			MessageType:   "sample-message-type",
+	//			ContentType:   "application/json",
+	//			Payload:       []byte("Hello, World!"),
+	//			Headers:       nil,
+	//			Message:       nil,
+	//		})
+	//
+	//		if err != nil {
+	//			panic(err)
+	//		}
+	//
+	//		err1 = writer.Commit()
+	//		if err1 != nil {
+	//			panic(err1)
+	//		}
+	//		i++
+	//		//log.Println("[INFO] Message written.", i)
+	//		// time.Sleep(time.Second / 4)
+	//	}
+	//}()
 
 	consumer.Listen()
 }
