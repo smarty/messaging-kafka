@@ -84,7 +84,7 @@ func (this *defaultWriter) computeMessageType(messageType, contentType string) [
 	// header: 0x0 magic byte and 32-bit unsigned integer containing message type and content type
 	value := this.messageTypes[messageType] << 8
 	value += uint32(this.contentTypes[contentType])
-	target := make([]byte, 5)
+	target := make([]byte, 4+1)
 	binary.LittleEndian.PutUint32(target[1:], value)
 	return target
 }

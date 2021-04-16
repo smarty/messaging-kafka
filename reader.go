@@ -48,9 +48,6 @@ func (this defaultReader) openReader(config messaging.StreamConfig) (reader *kaf
 	} else {
 		kafkaConfig.GroupID = config.GroupName
 		kafkaConfig.GroupTopics = config.Topics
-		if len(config.StreamName) > 0 {
-			kafkaConfig.GroupTopics = append(kafkaConfig.GroupTopics, config.StreamName)
-		}
 	}
 
 	reader = kafka.NewReader(kafkaConfig)
