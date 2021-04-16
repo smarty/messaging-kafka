@@ -6,9 +6,9 @@ import (
 	"time"
 
 	"github.com/smartystreets/messaging-kafka"
-	"github.com/smartystreets/messaging/v3"
-	"github.com/smartystreets/messaging/v3/handlers/retry"
-	"github.com/smartystreets/messaging/v3/streaming"
+	"github.com/smartystreets/messaging/v4"
+	"github.com/smartystreets/messaging/v4/handlers/retry"
+	"github.com/smartystreets/messaging/v4/streaming"
 )
 
 type myMessageHandler struct{}
@@ -17,6 +17,7 @@ func (this myMessageHandler) Handle(_ context.Context, messages ...interface{}) 
 	for _, message := range messages {
 		delivery := message.(messaging.Delivery)
 		log.Println("DeliveryID", delivery.DeliveryID)
+		log.Println("Topic", delivery.Topic)
 		log.Println("MessageType", delivery.MessageType)
 		log.Println("ContentType", delivery.ContentType)
 		log.Println("Payload", string(delivery.Payload))
@@ -39,13 +40,17 @@ func main() {
 	consumer := streaming.New(connector,
 		streaming.Options.Logger(logger),
 		streaming.Options.Subscriptions(
-			streaming.NewSubscription("my-topic",
-				// streaming.SubscriptionOptions.Name("my-group"),
-				streaming.SubscriptionOptions.FullDeliveryToHandler(true),
-				streaming.SubscriptionOptions.AddWorkers(
-					retry.New(myMessageHandler{}),
-				),
+			streaming.SubscriptionOptions.AddStream(
+				streaming.StreamOptions.StreamName("my-topic"),
 			),
+			streaming.SubscriptionOptions.AddStream(
+				streaming.StreamOptions.StreamName("my-topic-a"),
+			),
+			streaming.SubscriptionOptions.AddStream(
+				streaming.StreamOptions.StreamName("my-topic-b"),
+			),
+			streaming.SubscriptionOptions.FullDeliveryToHandler(true),
+			streaming.SubscriptionOptions.AddWorkers(retry.New(myMessageHandler{})),
 		),
 	)
 
@@ -58,6 +63,7 @@ func main() {
 	defer func() { _ = connection.Close() }()
 
 	go func() {
+		time.Sleep(time.Second)
 		writer, err1 := connection.CommitWriter(context.Background())
 		if err1 != nil {
 			panic(err)
@@ -67,6 +73,13 @@ func main() {
 
 		i := 0
 		for {
+			topicSuffix := "-a"
+			if i%2 == 0 {
+				topicSuffix = "-b"
+			}
+			topic := "my-topic" + topicSuffix
+			// log.Println("[INFO] Writing message to:", topic)
+
 			_, err = writer.Write(context.Background(), messaging.Dispatch{
 				SourceID:      1,
 				MessageID:     2,
@@ -74,7 +87,7 @@ func main() {
 				Timestamp:     time.Now().UTC(),
 				Expiration:    0,
 				Durable:       false,
-				Topic:         "my-topic",
+				Topic:         topic,
 				Partition:     0,
 				MessageType:   "sample-message-type",
 				ContentType:   "application/json",
