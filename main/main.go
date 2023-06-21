@@ -2,11 +2,12 @@ package main
 
 import (
 	"context"
-	"github.com/smartystreets/messaging-kafka"
-	"github.com/smartystreets/messaging/v4"
-	"github.com/smartystreets/messaging/v4/handlers/retry"
-	"github.com/smartystreets/messaging/v4/streaming"
 	"log"
+
+	kafka "github.com/smarty/messaging-kafka"
+	"github.com/smarty/messaging/v4"
+	"github.com/smarty/messaging/v4/handlers/retry"
+	"github.com/smarty/messaging/v4/streaming"
 )
 
 type myMessageHandler struct{}

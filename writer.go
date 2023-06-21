@@ -4,8 +4,9 @@ import (
 	"context"
 	"encoding/binary"
 	"fmt"
+
 	"github.com/segmentio/kafka-go"
-	"github.com/smartystreets/messaging/v4"
+	"github.com/smarty/messaging/v4"
 )
 
 type defaultWriter struct {
