@@ -1,4 +1,4 @@
-module github.com/smartystreets/messaging-kafka
+module github.com/smarty/messaging-kafka
 
 go 1.17
 
