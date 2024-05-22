@@ -1,6 +1,6 @@
 module github.com/smarty/messaging-kafka
 
-go 1.21
+go 1.22
 
 require (
 	github.com/segmentio/kafka-go v0.4.14
